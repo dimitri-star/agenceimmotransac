@@ -1,0 +1,204 @@
+// EstimaFlow MVP - PRD data model
+// Instance par agence (Option B)
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  NEGOTIATOR
+}
+
+enum LeadStatus {
+  NEW
+  IN_CONTACT
+  APPOINTMENT_SET
+  ESTIMATION_DONE
+  MANDATE_SIGNED
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE
+  PORTAL_SELOGER
+  PORTAL_LEBONCOIN
+  PORTAL_BIENICI
+  MANUAL
+  OTHER
+}
+
+enum MandateType {
+  EXCLUSIVE
+  SIMPLE
+}
+
+enum SequenceChannel {
+  SMS
+  EMAIL
+  MANUAL_TASK
+}
+
+enum SequenceExecutionStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum ActivityType {
+  STATUS_CHANGE
+  NOTE
+  CALL
+  SMS_SENT
+  EMAIL_SENT
+  APPOINTMENT
+  MANUAL_TASK
+}
+
+model Agency {
+  id                 String   @id @default(cuid())
+  name               String
+  logoUrl            String?
+  primaryColor       String?  @default("#0a0a0a")
+  smsSenderName      String?
+  emailFrom          String?
+  subscriptionStatus String?  @default("active")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  users    User[]
+  leads    Lead[]
+  sequences Sequence[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  agencyId     String
+  name         String
+  email        String
+  passwordHash String
+  role         UserRole
+  phone        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  leads     Lead[]   @relation("AssignedLeads")
+  activities Activity[]
+}
+
+model Lead {
+  id               String      @id @default(cuid())
+  agencyId         String
+  assignedToId     String?
+  firstName        String
+  lastName         String
+  email            String
+  phone            String
+  propertyAddress  String
+  propertyType     String?
+  propertySize     String?
+  source           LeadSource
+  status           LeadStatus  @default(NEW)
+  lostReason       String?
+  estimatedValue   Int?
+  mandateType      MandateType?
+  notes            String?
+  nextActionAt     DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  agency    Agency              @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  assignedTo User?               @relation("AssignedLeads", fields: [assignedToId], references: [id], onDelete: SetNull)
+  messages   Message[]
+  activities Activity[]
+  sequenceExecutions SequenceExecution[]
+
+  @@unique([agencyId, phone, email])
+  @@index([agencyId, status])
+}
+
+model Sequence {
+  id             String   @id @default(cuid())
+  agencyId       String
+  name           String
+  triggerStatus  LeadStatus
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  agency   Agency             @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  steps    SequenceStep[]
+  executions SequenceExecution[]
+}
+
+model SequenceStep {
+  id              String          @id @default(cuid())
+  sequenceId      String
+  order           Int
+  delayDays       Int             @default(0)
+  delayHours      Int             @default(0)
+  channel         SequenceChannel
+  templateContent String
+  subject         String?
+
+  sequence Sequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+
+  @@index([sequenceId])
+}
+
+model SequenceExecution {
+  id              String                 @id @default(cuid())
+  leadId          String
+  sequenceId      String
+  currentStep     Int                     @default(0)
+  status          SequenceExecutionStatus @default(ACTIVE)
+  nextExecutionAt DateTime?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  sequence Sequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+
+  @@unique([leadId, sequenceId])
+  @@index([status, nextExecutionAt])
+}
+
+model Message {
+  id        String          @id @default(cuid())
+  leadId    String
+  channel   SequenceChannel
+  direction MessageDirection
+  content   String
+  status    String?         // SENT, DELIVERED, FAILED
+  sentAt    DateTime        @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+}
+
+model Activity {
+  id          String       @id @default(cuid())
+  leadId      String
+  userId      String?
+  type        ActivityType
+  description String
+  createdAt   DateTime     @default(now())
+
+  lead Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([leadId])
+}
