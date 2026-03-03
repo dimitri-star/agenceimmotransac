@@ -59,8 +59,6 @@ export function DashboardNav() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const user = session?.user;
 
-  if (!user) return null;
-
   return (
     <>
       {/* Desktop sidebar */}
@@ -72,7 +70,11 @@ export function DashboardNav() {
           <NavLinks />
         </nav>
         <div className="border-t border-border p-3">
-          <UserMenu user={user} variant="full" />
+          {user ? <UserMenu user={user} variant="full" /> : (
+            <Link href="/" className="text-muted-foreground hover:text-foreground text-xs font-medium">
+              ← Retour à l&apos;accueil
+            </Link>
+          )}
         </div>
       </aside>
 
@@ -94,7 +96,9 @@ export function DashboardNav() {
           </SheetContent>
         </Sheet>
         <span className="font-medium">EstimaFlow</span>
-        <UserMenu user={user} />
+        {user ? <UserMenu user={user} /> : (
+          <Link href="/" className="text-muted-foreground text-sm">Accueil</Link>
+        )}
       </header>
     </>
   );
@@ -108,7 +112,7 @@ function UserMenu({
   variant?: "icon" | "full";
 }) {
   const handleLogout = () => {
-    signOut({ callbackUrl: "/login" });
+    signOut({ callbackUrl: "/" });
   };
   const name = user?.name ?? "User";
   const email = user?.email ?? "";

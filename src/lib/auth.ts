@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import * as bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 
 export type SessionUser = { id?: string; email?: string; name?: string; role?: string; agencyId?: string; agencyName?: string };
@@ -40,7 +39,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
         if (!user) return null;
 
-        const valid = await bcrypt.compare(
+        const { compare } = await import("bcryptjs");
+        const valid = await compare(
           String(credentials.password),
           user.passwordHash
         );

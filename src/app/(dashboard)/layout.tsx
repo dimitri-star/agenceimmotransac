@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { DashboardNav } from "@/components/dashboard-nav";
 
@@ -10,14 +8,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
   const { data: session, status } = useSession();
-
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/login");
-    }
-  }, [status, router]);
 
   if (status === "loading") {
     return (
@@ -25,10 +16,6 @@ export default function DashboardLayout({
         <p className="text-muted-foreground">Chargement...</p>
       </div>
     );
-  }
-
-  if (!session) {
-    return null;
   }
 
   return (
