@@ -2,6 +2,7 @@ import { inngest } from "./client";
 import { prisma } from "@/lib/db";
 import { sendSms } from "@/lib/sms";
 import { sendEmail } from "@/lib/email";
+import { sendWhatsApp } from "@/lib/whatsapp";
 import { SequenceChannel, MessageDirection } from "@/generated/prisma";
 
 const templateVars = (lead: {
@@ -75,6 +76,18 @@ export const sendInstantReply = inngest.createFunction(
       });
     }
 
+    const whatsAppBody = applyTemplate(
+      "Bonjour {prénom}, nous avons bien reçu votre demande concernant {adresse_bien}. Pour vous proposer une visite adaptée, puis-je vous poser 2-3 questions rapides ?",
+      vars
+    );
+    const waResult = await sendWhatsApp(lead.id, lead.phone, whatsAppBody);
+    if (waResult.messageId && prisma) {
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { status: "IN_WHATSAPP_CONVERSATION" },
+      });
+    }
+
     const newLeadSequence = await prisma.sequence.findFirst({
       where: { agencyId: lead.agencyId, triggerStatus: "NEW", isActive: true },
       include: { steps: { orderBy: { order: "asc" } } },
@@ -102,7 +115,7 @@ export const sendInstantReply = inngest.createFunction(
       });
     }
 
-    return { ok: true, sms: !!smsResult.sid, email: !!emailResult.id };
+    return { ok: true, sms: !!smsResult.sid, email: !!emailResult.id, whatsApp: !!waResult.messageId };
   }
 );
 
@@ -155,6 +168,9 @@ export const runSequenceSteps = inngest.createFunction(
       } else if (nextStep.channel === "EMAIL") {
         const html = applyTemplate(nextStep.templateContent, vars);
         await sendEmail(lead.email, nextStep.subject ?? "Message", html);
+      } else if (nextStep.channel === "WHATSAPP") {
+        const body = applyTemplate(nextStep.templateContent, vars);
+        await sendWhatsApp(lead.id, lead.phone, body);
       }
       const isLast = ex.currentStep + 1 >= steps.length;
       const nextDelay = isLast ? null : (() => {
@@ -175,5 +191,89 @@ export const runSequenceSteps = inngest.createFunction(
       processed++;
     }
     return { processed };
+  }
+);
+
+function addHours(d: Date, h: number): Date {
+  const r = new Date(d);
+  r.setTime(r.getTime() + h * 60 * 60 * 1000);
+  return r;
+}
+
+export const sendAppointmentReminders = inngest.createFunction(
+  { id: "send-appointment-reminders", retries: 1 },
+  { cron: "0 * * * *" },
+  async () => {
+    if (!prisma) return { j1: 0, h2: 0 };
+    const now = new Date();
+    const in24hMin = addHours(now, 23);
+    const in24hMax = addHours(now, 25);
+    const in2hMin = addHours(now, 1.5);
+    const in2hMax = addHours(now, 2.5);
+    let j1 = 0;
+    let h2 = 0;
+    const j1Leads = await prisma.lead.findMany({
+      where: {
+        status: "APPOINTMENT_SET",
+        nextActionAt: { gte: in24hMin, lte: in24hMax },
+      },
+      include: { agency: true, assignedTo: { select: { name: true } } },
+    });
+    for (const lead of j1Leads) {
+      const vars = templateVars(lead);
+      const body = applyTemplate(
+        "Bonjour {prénom}, rappel : votre visite est prévue demain. À très vite, {nom_négociateur}.",
+        vars
+      );
+      await sendSms(lead.phone, body);
+      await sendEmail(
+        lead.email,
+        "Rappel : visite prévue demain",
+        `<p>Bonjour ${lead.firstName},</p><p>Rappel : votre visite est prévue demain.</p><p>À très vite, ${lead.assignedTo?.name ?? "votre conseiller"}.</p>`,
+        lead.agency?.emailFrom ?? undefined
+      );
+      await sendWhatsApp(lead.id, lead.phone, body);
+      if (prisma) {
+        await prisma.message.create({
+          data: {
+            leadId: lead.id,
+            channel: "SMS" as SequenceChannel,
+            direction: "OUTBOUND" as MessageDirection,
+            content: body,
+            status: "SENT",
+          },
+        }).catch(() => {});
+      }
+      j1++;
+    }
+    const h2Leads = await prisma.lead.findMany({
+      where: {
+        status: "APPOINTMENT_SET",
+        nextActionAt: { gte: in2hMin, lte: in2hMax },
+      },
+      include: { agency: true, assignedTo: { select: { name: true } } },
+    });
+    for (const lead of h2Leads) {
+      const vars = templateVars(lead);
+      const body = applyTemplate(
+        "Bonjour {prénom}, votre visite est dans 2 h. À tout à l'heure, {nom_négociateur}.",
+        vars
+      );
+      await sendSms(lead.phone, body);
+      await sendWhatsApp(lead.id, lead.phone, body);
+      if (prisma) {
+        await prisma.message.create({
+          data: {
+            leadId: lead.id,
+            channel: "SMS" as SequenceChannel,
+            direction: "OUTBOUND" as MessageDirection,
+            content: body,
+            status: "SENT",
+          },
+        }).catch(() => {});
+      }
+      h2++;
+    }
+    return { j1, h2 };
   }
 );

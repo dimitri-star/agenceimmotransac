@@ -31,6 +31,7 @@ export async function GET(
         take: 50,
         include: { user: { select: { name: true } } },
       },
+      messages: { orderBy: { sentAt: "asc" }, take: 100 },
     },
   });
 
@@ -41,6 +42,8 @@ export async function GET(
   return NextResponse.json({
     ...lead,
     nextActionAt: lead.nextActionAt?.toISOString() ?? null,
+    calendlyLinkSentAt: lead.calendlyLinkSentAt?.toISOString() ?? null,
+    rdvConfirmedAt: lead.rdvConfirmedAt?.toISOString() ?? null,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
     activities: lead.activities.map((a) => ({
@@ -50,6 +53,15 @@ export async function GET(
       description: a.description,
       createdAt: a.createdAt.toISOString(),
       userName: a.user?.name,
+    })),
+    messages: lead.messages.map((m) => ({
+      id: m.id,
+      leadId: m.leadId,
+      channel: m.channel,
+      direction: m.direction,
+      content: m.content,
+      status: m.status,
+      sentAt: m.sentAt.toISOString(),
     })),
   });
 }

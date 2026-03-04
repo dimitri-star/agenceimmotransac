@@ -32,8 +32,10 @@ import {
   Mail,
   Shield,
   Palette,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
 
 const MOCK_AGENCY = {
   name: "Agence Demo",
@@ -41,6 +43,9 @@ const MOCK_AGENCY = {
   primaryColor: "#0a0a0a",
   smsSenderName: "AgenceDemo",
   emailFrom: "contact@agence-demo.fr",
+  calendlyEventType: "",
+  calendlyOrgUri: "",
+  defaultCommission: 8000,
 };
 
 const INITIAL_USERS = [
@@ -63,10 +68,43 @@ export default function SettingsPage() {
   const [users, setUsers] = useState(INITIAL_USERS);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [newUser, setNewUser] = useState({ name: "", email: "", phone: "", role: "NEGOTIATOR" as "ADMIN" | "NEGOTIATOR" });
+  const [agency, setAgency] = useState<typeof MOCK_AGENCY & { calendlyToken?: string | null; defaultCommission?: number | null }>(MOCK_AGENCY);
+  const [calendlyUrl, setCalendlyUrl] = useState("");
+  const [calendlyToken, setCalendlyToken] = useState("");
+  const [defaultCommission, setDefaultCommission] = useState(String(MOCK_AGENCY.defaultCommission ?? ""));
+
+  useEffect(() => {
+    fetch("/api/agency")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data) {
+          setAgency((a) => ({ ...a, ...data, calendlyToken: data.calendlyToken }));
+          setCalendlyUrl(data.calendlyEventType ?? "");
+          setDefaultCommission(data.defaultCommission != null ? String(data.defaultCommission) : "");
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleSaveAgency = async () => {
+    const res = await fetch("/api/agency", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        calendlyEventType: calendlyUrl || null,
+        defaultCommission: defaultCommission ? Number(defaultCommission) : null,
+        ...(calendlyToken && calendlyToken !== "(défini)" ? { calendlyToken } : {}),
+      }),
+    });
+    if (res.ok) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
   };
 
   const handleAddUser = () => {
@@ -136,6 +174,18 @@ export default function SettingsPage() {
               </p>
             </div>
             <div className="space-y-2">
+              <Label>Commission moyenne (€)</Label>
+              <Input
+                type="number"
+                placeholder="8000"
+                value={defaultCommission}
+                onChange={(e) => setDefaultCommission(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Utilisée pour le calcul des revenus générés par l&apos;automatisation (dashboard).
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label className="flex items-center gap-1.5">
                 <Palette className="h-3.5 w-3.5" />
                 Couleur principale
@@ -157,9 +207,9 @@ export default function SettingsPage() {
               </p>
             </div>
             <Separator />
-            <Button onClick={handleSave} className="gap-2">
+            <Button onClick={handleSaveAgency} className="gap-2">
               {saved ? <Check className="h-4 w-4" /> : null}
-              {saved ? "Enregistre !" : "Enregistrer les modifications"}
+              {saved ? "Enregistré !" : "Enregistrer les modifications"}
             </Button>
           </CardContent>
         </Card>
@@ -229,9 +279,43 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Button onClick={handleSave} className="gap-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Calendly
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Lien de prise de RDV (URL complète)</Label>
+                <Input
+                  placeholder="https://calendly.com/votre-agence/30min"
+                  value={calendlyUrl}
+                  onChange={(e) => setCalendlyUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Envoyé aux leads qualifiés (prospect chaud). Ex. https://calendly.com/votre-agence/estimation
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Token API (optionnel)</Label>
+                <Input
+                  type="password"
+                  placeholder={agency.calendlyToken ? "••••••••" : "Token Calendly"}
+                  value={calendlyToken === "(défini)" ? "" : calendlyToken}
+                  onChange={(e) => setCalendlyToken(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Pour créer des liens personnalisés ou lister les types d&apos;événements.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Button onClick={handleSaveAgency} className="gap-2">
             {saved ? <Check className="h-4 w-4" /> : null}
-            {saved ? "Enregistre !" : "Enregistrer les modifications"}
+            {saved ? "Enregistré !" : "Enregistrer les modifications"}
           </Button>
         </div>
       )}

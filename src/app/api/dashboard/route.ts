@@ -50,7 +50,7 @@ export async function GET(req: Request) {
   const sevenDaysAgo = new Date(now);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const [toFollowUp, unconfirmedRdv, oldEstimations] = await Promise.all([
+  const [toFollowUp, unconfirmedRdv, oldEstimations, agencyRow, mandatesWithAutomation] = await Promise.all([
     prisma.lead.count({
       where: {
         agencyId,
@@ -68,7 +68,29 @@ export async function GET(req: Request) {
         updatedAt: { lt: sevenDaysAgo },
       },
     }),
+    prisma.agency.findUnique({
+      where: { id: agencyId },
+      select: { defaultCommission: true },
+    }),
+    prisma.lead.findMany({
+      where: { agencyId, status: "MANDATE_SIGNED" },
+      select: { id: true, createdAt: true },
+    }),
   ]);
+
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  const countWithAutomation = await Promise.all(
+    mandatesWithAutomation.map(async (l) => {
+      const cutoff = new Date(l.createdAt.getTime() + sevenDaysMs);
+      const msg = await prisma.message.findFirst({
+        where: { leadId: l.id, sentAt: { gte: l.createdAt, lte: cutoff } },
+        select: { id: true },
+      });
+      return msg ? 1 : 0;
+    })
+  ).then((arr) => arr.reduce((a, b) => a + b, 0));
+  const commission = agencyRow?.defaultCommission ?? 8000;
+  const revenueFromAutomation = countWithAutomation * commission;
 
   return NextResponse.json({
     kpis: {
@@ -83,5 +105,10 @@ export async function GET(req: Request) {
       { type: "unconfirmed_rdv", count: unconfirmedRdv, label: "RDV sans confirmation", href: "/pipeline?filter=unconfirmed_rdv" },
       { type: "estimations_not_converted", count: oldEstimations, label: "Estimations non transformées >7j", href: "/pipeline?filter=estimation_old" },
     ],
+    revenueFromAutomation: {
+      countMandatesWithAutomation: countWithAutomation,
+      commissionPerMandate: commission,
+      totalRevenue: revenueFromAutomation,
+    },
   });
 }

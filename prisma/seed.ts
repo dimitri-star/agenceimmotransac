@@ -25,6 +25,7 @@ async function main() {
       smsSenderName: "AgenceDemo",
       emailFrom: "contact@agence-demo.fr",
       subscriptionStatus: "active",
+      defaultCommission: 8000,
     },
   });
 

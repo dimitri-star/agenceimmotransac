@@ -1,8 +1,8 @@
 import { serve } from "inngest/next";
 import { inngest } from "@/inngest/client";
-import { sendInstantReply, runSequenceSteps } from "@/inngest/functions";
+import { sendInstantReply, runSequenceSteps, sendAppointmentReminders } from "@/inngest/functions";
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [sendInstantReply, runSequenceSteps],
+  functions: [sendInstantReply, runSequenceSteps, sendAppointmentReminders],
 });

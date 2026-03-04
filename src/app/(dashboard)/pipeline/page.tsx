@@ -34,16 +34,20 @@ import {
 import { Plus, Search, RotateCcw } from "lucide-react";
 
 const STATUS_LABELS: Record<LeadStatus, string> = {
-  NEW: "Nouveau",
+  NEW: "Nouveau lead",
+  IN_WHATSAPP_CONVERSATION: "En conversation WhatsApp",
+  QUALIFIED: "Qualifié",
   IN_CONTACT: "En contact",
-  APPOINTMENT_SET: "RDV programme",
-  ESTIMATION_DONE: "Estimation faite",
-  MANDATE_SIGNED: "Mandat signe",
+  APPOINTMENT_SET: "RDV pris",
+  ESTIMATION_DONE: "Estimation réalisée",
+  MANDATE_SIGNED: "Mandat signé",
   LOST: "Perdu",
 };
 
 const STATUS_COLORS: Record<LeadStatus, string> = {
   NEW: "border-t-blue-500",
+  IN_WHATSAPP_CONVERSATION: "border-t-sky-500",
+  QUALIFIED: "border-t-violet-500",
   IN_CONTACT: "border-t-yellow-500",
   APPOINTMENT_SET: "border-t-violet-500",
   ESTIMATION_DONE: "border-t-orange-500",

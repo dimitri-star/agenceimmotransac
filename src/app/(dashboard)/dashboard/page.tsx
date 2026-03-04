@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,8 @@ import {
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   NEW: { label: "Nouveau", className: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300" },
+  IN_WHATSAPP_CONVERSATION: { label: "En conv. WhatsApp", className: "bg-sky-200/70 text-sky-900 dark:bg-sky-900/30 dark:text-sky-300" },
+  QUALIFIED: { label: "Qualifié", className: "bg-violet-200/70 text-violet-900 dark:bg-violet-900/30 dark:text-violet-300" },
   IN_CONTACT: { label: "En contact", className: "bg-amber-200/70 text-amber-900 dark:bg-amber-900/30 dark:text-amber-300" },
   APPOINTMENT_SET: { label: "RDV pris", className: "bg-violet-200/70 text-violet-900 dark:bg-violet-900/30 dark:text-violet-300" },
   ESTIMATION_DONE: { label: "Estime", className: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300" },
@@ -67,52 +70,36 @@ function formatTimeAgo(dateStr: string): string {
   return `Il y a ${diffDays}j`;
 }
 
+type DashboardApi = {
+  kpis?: { leadsThisMonth: number; appointmentsScheduled: number; mandatesSigned: number; conversionRate: number };
+  revenueFromAutomation?: { countMandatesWithAutomation: number; commissionPerMandate: number; totalRevenue: number };
+  urgentActions?: { type: string; count: number; label: string; href: string }[];
+};
+
 export default function DashboardPage() {
+  const [period, setPeriod] = useState("month");
+  const [apiData, setApiData] = useState<DashboardApi | null>(null);
+  useEffect(() => {
+    fetch(`/api/dashboard?period=${period}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setApiData(d))
+      .catch(() => {});
+  }, [period]);
+
+  const kpis = apiData?.kpis ?? {
+    leadsThisMonth: mockKpiTrends.leadsThisMonth.value,
+    appointmentsScheduled: mockKpiTrends.appointmentsScheduled.value,
+    mandatesSigned: mockKpiTrends.mandatesSigned.value,
+    conversionRate: mockKpiTrends.conversionRate.value,
+  };
+  const urgentActions = apiData?.urgentActions ?? mockUrgentActions;
+  const revenueFromAutomation = apiData?.revenueFromAutomation;
+
   const kpiCards = [
-    {
-      key: "leads",
-      label: "Leads ce mois",
-      value: mockKpiTrends.leadsThisMonth.value,
-      trend: mockKpiTrends.leadsThisMonth.trend,
-      previousValue: mockKpiTrends.leadsThisMonth.previousValue,
-      icon: TrendingUp,
-      format: (v: number) => String(v),
-      iconBg: "bg-sky-200/80 dark:bg-sky-900/50",
-      iconColor: "text-sky-700 dark:text-sky-400",
-    },
-    {
-      key: "rdv",
-      label: "RDV programmes",
-      value: mockKpiTrends.appointmentsScheduled.value,
-      trend: mockKpiTrends.appointmentsScheduled.trend,
-      previousValue: mockKpiTrends.appointmentsScheduled.previousValue,
-      icon: Calendar,
-      format: (v: number) => String(v),
-      iconBg: "bg-violet-200/80 dark:bg-violet-900/40",
-      iconColor: "text-violet-700 dark:text-violet-400",
-    },
-    {
-      key: "mandats",
-      label: "Mandats signes",
-      value: mockKpiTrends.mandatesSigned.value,
-      trend: mockKpiTrends.mandatesSigned.trend,
-      previousValue: mockKpiTrends.mandatesSigned.previousValue,
-      icon: FileSignature,
-      format: (v: number) => String(v),
-      iconBg: "bg-emerald-200/80 dark:bg-emerald-900/40",
-      iconColor: "text-emerald-700 dark:text-emerald-400",
-    },
-    {
-      key: "taux",
-      label: "Taux conversion",
-      value: mockKpiTrends.conversionRate.value,
-      trend: mockKpiTrends.conversionRate.trend,
-      previousValue: mockKpiTrends.conversionRate.previousValue,
-      icon: Target,
-      format: (v: number) => `${v}%`,
-      iconBg: "bg-amber-200/80 dark:bg-amber-900/40",
-      iconColor: "text-amber-700 dark:text-amber-400",
-    },
+    { key: "leads", label: "Leads ce mois", value: kpis.leadsThisMonth, icon: TrendingUp, format: (v: number) => String(v), iconBg: "bg-sky-200/80 dark:bg-sky-900/50", iconColor: "text-sky-700 dark:text-sky-400" },
+    { key: "rdv", label: "RDV programmés", value: kpis.appointmentsScheduled, icon: Calendar, format: (v: number) => String(v), iconBg: "bg-violet-200/80 dark:bg-violet-900/40", iconColor: "text-violet-700 dark:text-violet-400" },
+    { key: "mandats", label: "Mandats signés", value: kpis.mandatesSigned, icon: FileSignature, format: (v: number) => String(v), iconBg: "bg-emerald-200/80 dark:bg-emerald-900/40", iconColor: "text-emerald-700 dark:text-emerald-400" },
+    { key: "taux", label: "Taux conversion", value: kpis.conversionRate, icon: Target, format: (v: number) => `${v}%`, iconBg: "bg-amber-200/80 dark:bg-amber-900/40", iconColor: "text-amber-700 dark:text-amber-400" },
   ];
 
   const maxWeeklyLeads = Math.max(...mockWeeklyActivity.map((d) => d.leads));
@@ -128,15 +115,15 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Select defaultValue="month">
+          <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Periode" />
+              <SelectValue placeholder="Période" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="week">Cette semaine</SelectItem>
               <SelectItem value="month">Ce mois</SelectItem>
               <SelectItem value="quarter">Ce trimestre</SelectItem>
-              <SelectItem value="year">Cette annee</SelectItem>
+              <SelectItem value="year">Cette année</SelectItem>
             </SelectContent>
           </Select>
           <Select defaultValue="all">
@@ -166,41 +153,50 @@ export default function DashboardPage() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {kpiCards.map((kpi) => {
-          const isPositive = kpi.trend > 0;
-          return (
-            <Card key={kpi.key} className="relative overflow-hidden">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-muted-foreground">{kpi.label}</p>
-                  <div className={`rounded-lg p-2 ${kpi.iconBg}`}>
-                    <kpi.icon className={`h-4 w-4 ${kpi.iconColor}`} />
-                  </div>
+        {kpiCards.map((kpi) => (
+          <Card key={kpi.key} className="relative overflow-hidden">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">{kpi.label}</p>
+                <div className={`rounded-lg p-2 ${kpi.iconBg}`}>
+                  <kpi.icon className={`h-4 w-4 ${kpi.iconColor}`} />
                 </div>
-                <div className="mt-3 flex items-end gap-2">
-                  <span className="text-3xl font-bold tracking-tight">{kpi.format(kpi.value)}</span>
-                </div>
-                <div className="mt-2 flex items-center gap-1.5">
-                  {isPositive ? (
-                    <span className="flex items-center gap-0.5 text-xs font-medium text-slate-600 dark:text-slate-400">
-                      <ArrowUpRight className="h-3 w-3" />
-                      +{kpi.trend.toFixed(0)}%
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-0.5 text-xs font-medium text-slate-500 dark:text-slate-500">
-                      <ArrowDownRight className="h-3 w-3" />
-                      {kpi.trend.toFixed(0)}%
-                    </span>
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    vs mois dernier ({kpi.format(kpi.previousValue)})
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+              </div>
+              <div className="mt-3 flex items-end gap-2">
+                <span className="text-3xl font-bold tracking-tight">{kpi.format(kpi.value)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
+
+      {/* Revenus générés par traitement automatisé */}
+      {revenueFromAutomation != null && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Zap className="h-4 w-4 text-amber-500" />
+              Revenus générés par traitement automatisé
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Mandats signés ayant reçu au moins un message auto dans les 7 jours suivant la création du lead
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap items-baseline gap-4">
+              <div>
+                <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                  {revenueFromAutomation.totalRevenue.toLocaleString("fr-FR")} €
+                </span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {revenueFromAutomation.countMandatesWithAutomation} mandat(s) × {revenueFromAutomation.commissionPerMandate.toLocaleString("fr-FR")} € de commission moyenne
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
 
       {/* Row 2: Actions urgentes + Temps de reponse */}
       <div className="grid gap-4 lg:grid-cols-3">
@@ -214,7 +210,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {mockUrgentActions.map((action) => {
+              {urgentActions.map((action, i) => {
                 const actionConfig = {
                   leads_to_follow_up: { icon: Phone, color: "bg-slate-600 text-slate-100 dark:bg-slate-500 dark:text-slate-200" },
                   unconfirmed_rdv: { icon: Calendar, color: "bg-slate-600 text-slate-100 dark:bg-slate-500 dark:text-slate-200" },
@@ -223,7 +219,7 @@ export default function DashboardPage() {
                 const Icon = actionConfig?.icon ?? AlertCircle;
                 const pillColor = actionConfig?.color ?? "bg-primary text-primary-foreground";
                 return (
-                  <Link key={action.id} href={action.href}>
+                  <Link key={action.type ?? i} href={action.href}>
                     <div className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50">
                       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${pillColor}`}>
                         <span className="text-sm font-bold">{action.count}</span>

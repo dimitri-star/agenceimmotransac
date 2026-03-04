@@ -32,6 +32,8 @@ export async function PATCH(
 
   const validStatuses: LeadStatus[] = [
     "NEW",
+    "IN_WHATSAPP_CONVERSATION",
+    "QUALIFIED",
     "IN_CONTACT",
     "APPOINTMENT_SET",
     "ESTIMATION_DONE",

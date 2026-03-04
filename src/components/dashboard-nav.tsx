@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +27,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/pipeline", label: "Pipeline", icon: KanbanSquare },
+  { href: "/relance", label: "Centre de Relance", icon: RefreshCw },
   { href: "/sequences", label: "Séquences", icon: ListOrdered },
   { href: "/settings", label: "Paramètres", icon: Settings },
 ];

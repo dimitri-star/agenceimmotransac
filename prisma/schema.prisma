@@ -17,11 +17,24 @@ enum UserRole {
 
 enum LeadStatus {
   NEW
+  IN_WHATSAPP_CONVERSATION
+  QUALIFIED
   IN_CONTACT
   APPOINTMENT_SET
   ESTIMATION_DONE
   MANDATE_SIGNED
   LOST
+}
+
+enum QualificationStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ProspectPath {
+  HOT
+  HESITANT
 }
 
 enum LeadSource {
@@ -41,6 +54,7 @@ enum MandateType {
 enum SequenceChannel {
   SMS
   EMAIL
+  WHATSAPP
   MANUAL_TASK
 }
 
@@ -62,6 +76,8 @@ enum ActivityType {
   CALL
   SMS_SENT
   EMAIL_SENT
+  WHATSAPP_SENT
+  CALENDLY_SENT
   APPOINTMENT
   MANUAL_TASK
 }
@@ -74,6 +90,10 @@ model Agency {
   smsSenderName      String?
   emailFrom          String?
   subscriptionStatus String?  @default("active")
+  calendlyToken      String?
+  calendlyOrgUri     String?
+  calendlyEventType  String?
+  defaultCommission  Int?     // commission moyenne en euros pour calcul revenus automation
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -99,25 +119,32 @@ model User {
 }
 
 model Lead {
-  id               String      @id @default(cuid())
-  agencyId         String
-  assignedToId     String?
-  firstName        String
-  lastName         String
-  email            String
-  phone            String
-  propertyAddress  String
-  propertyType     String?
-  propertySize     String?
-  source           LeadSource
-  status           LeadStatus  @default(NEW)
-  lostReason       String?
-  estimatedValue   Int?
-  mandateType      MandateType?
-  notes            String?
-  nextActionAt     DateTime?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  id                   String              @id @default(cuid())
+  agencyId             String
+  assignedToId         String?
+  firstName            String
+  lastName             String
+  email                String
+  phone                String
+  propertyAddress      String
+  propertyType         String?
+  propertySize         String?
+  source               LeadSource
+  status               LeadStatus          @default(NEW)
+  lostReason           String?
+  estimatedValue       Int?
+  mandateType          MandateType?
+  notes                String?
+  nextActionAt         DateTime?
+  qualificationStatus  QualificationStatus @default(NOT_STARTED)
+  qualificationPayload Json?               // budget, motivation, moveInTimeline, searchType, réponses brutes
+  heatScore            Int?                // 1-5
+  prospectPath         ProspectPath?
+  calendlyLinkSentAt   DateTime?
+  calendlyBookingUrl   String?
+  rdvConfirmedAt       DateTime?           // pour Centre de Relance "RDV non confirmé"
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 
   agency    Agency              @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   assignedTo User?               @relation("AssignedLeads", fields: [assignedToId], references: [id], onDelete: SetNull)
