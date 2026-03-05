@@ -16,6 +16,7 @@ import type { Sequence, SequenceStep, SequenceChannel } from "@/types";
 import {
   ChevronRight,
   MessageSquare,
+  MessageCircle,
   Mail,
   ClipboardList,
   Clock,
@@ -31,15 +32,18 @@ import { cn } from "@/lib/utils";
 const CHANNEL_CONFIG: Record<SequenceChannel, { label: string; icon: typeof MessageSquare; color: string; bg: string }> = {
   SMS: { label: "SMS", icon: MessageSquare, color: "text-violet-600", bg: "bg-violet-100" },
   EMAIL: { label: "Email", icon: Mail, color: "text-cyan-600", bg: "bg-cyan-100" },
-  MANUAL_TASK: { label: "Tache manuelle", icon: ClipboardList, color: "text-orange-600", bg: "bg-orange-100" },
+  WHATSAPP: { label: "WhatsApp", icon: MessageCircle, color: "text-green-600", bg: "bg-green-100" },
+  MANUAL_TASK: { label: "Tâche manuelle", icon: ClipboardList, color: "text-orange-600", bg: "bg-orange-100" },
 };
 
 const TRIGGER_LABELS: Record<string, string> = {
   NEW: "Nouveau lead",
+  IN_WHATSAPP_CONVERSATION: "Conv. WhatsApp",
+  QUALIFIED: "Qualifié",
   IN_CONTACT: "En contact",
-  APPOINTMENT_SET: "RDV programme",
+  APPOINTMENT_SET: "RDV programmé",
   ESTIMATION_DONE: "Estimation faite",
-  MANDATE_SIGNED: "Mandat signe",
+  MANDATE_SIGNED: "Mandat signé",
   LOST: "Perdu",
 };
 
@@ -47,6 +51,9 @@ const MOCK_SEQUENCE_STATS: Record<string, { activeLeads: number; completed: numb
   "seq-1": { activeLeads: 3, completed: 12, avgDays: 4.2 },
   "seq-2": { activeLeads: 2, completed: 8, avgDays: 18.5 },
   "seq-3": { activeLeads: 0, completed: 3, avgDays: 2.1 },
+  "seq-4": { activeLeads: 5, completed: 18, avgDays: 0.1 },
+  "seq-5": { activeLeads: 2, completed: 9, avgDays: 1.5 },
+  "seq-6": { activeLeads: 1, completed: 4, avgDays: 12.0 },
 };
 
 function formatDelay(days: number, hours: number): string {

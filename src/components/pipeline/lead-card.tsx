@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useDraggable } from "@dnd-kit/core";
 import type { Lead } from "@/types";
 import { cn } from "@/lib/utils";
-import { Clock, User } from "lucide-react";
+import { Clock, User, Flame, MessageCircle } from "lucide-react";
 
 const SOURCE_LABELS: Record<string, string> = {
   WEBSITE: "Site",
@@ -53,11 +53,20 @@ export function LeadCard({ lead, isDragOverlay }: LeadCardProps) {
         <div className="font-medium text-sm leading-tight">
           {lead.firstName} {lead.lastName}
         </div>
-        {lead.estimatedValue && (
-          <span className="shrink-0 text-xs font-bold text-emerald-700">
-            {(lead.estimatedValue / 1000).toFixed(0)}k
-          </span>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {lead.qualification?.heatScore && (
+            <span className="flex items-center">
+              {Array.from({ length: lead.qualification.heatScore }).map((_, i) => (
+                <Flame key={i} className="h-2.5 w-2.5 text-orange-500" fill="currentColor" />
+              ))}
+            </span>
+          )}
+          {lead.estimatedValue && (
+            <span className="text-xs font-bold text-emerald-700">
+              {(lead.estimatedValue / 1000).toFixed(0)}k
+            </span>
+          )}
+        </div>
       </div>
       <div className="mt-0.5 truncate text-xs text-muted-foreground">
         {lead.propertyAddress}
@@ -69,6 +78,21 @@ export function LeadCard({ lead, isDragOverlay }: LeadCardProps) {
         {lead.mandateType && (
           <span className="inline-flex rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-800 border border-emerald-200">
             {lead.mandateType === "EXCLUSIVE" ? "Exclusif" : "Simple"}
+          </span>
+        )}
+        {lead.status === "IN_WHATSAPP_CONVERSATION" && (
+          <span className="inline-flex items-center gap-0.5 rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-800 border border-green-200">
+            <MessageCircle className="h-2.5 w-2.5" /> WhatsApp
+          </span>
+        )}
+        {lead.prospectPath && (
+          <span className={cn(
+            "inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium border",
+            lead.prospectPath === "HOT"
+              ? "bg-red-100 text-red-700 border-red-200"
+              : "bg-amber-100 text-amber-700 border-amber-200"
+          )}>
+            {lead.prospectPath === "HOT" ? "Chaud" : "Hésitant"}
           </span>
         )}
       </div>

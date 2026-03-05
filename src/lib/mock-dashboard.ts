@@ -5,6 +5,9 @@ export const mockDashboardKpis: DashboardKpis = {
   appointmentsScheduled: 8,
   mandatesSigned: 5,
   conversionRate: 34,
+  qualifiedLeads: 12,
+  estimatedRevenue: 2250000,
+  automationGeneratedRevenue: 1350000,
 };
 
 export const mockKpiTrends = {
@@ -12,10 +15,15 @@ export const mockKpiTrends = {
   appointmentsScheduled: { value: 8, previousValue: 6, trend: +33.3 },
   mandatesSigned: { value: 5, previousValue: 3, trend: +66.7 },
   conversionRate: { value: 34, previousValue: 28, trend: +21.4 },
+  qualifiedLeads: { value: 12, previousValue: 7, trend: +71.4 },
+  estimatedRevenue: { value: 2250000, previousValue: 1800000, trend: +25.0 },
+  automationGeneratedRevenue: { value: 1350000, previousValue: 900000, trend: +50.0 },
 };
 
 export const mockFunnelStages: FunnelStage[] = [
   { label: "Leads", count: 23, percentage: 100 },
+  { label: "WhatsApp", count: 18, percentage: 78 },
+  { label: "Qualifiés", count: 12, percentage: 52 },
   { label: "Contact", count: 15, percentage: 65 },
   { label: "RDV", count: 8, percentage: 35 },
   { label: "Estim.", count: 6, percentage: 26 },
@@ -27,7 +35,7 @@ export const mockUrgentActions: UrgentAction[] = [
     id: "1",
     type: "leads_to_follow_up",
     count: 3,
-    label: "Leads a relancer aujourd'hui",
+    label: "Leads à relancer aujourd'hui",
     href: "/pipeline?filter=to_follow",
   },
   {
@@ -41,7 +49,7 @@ export const mockUrgentActions: UrgentAction[] = [
     id: "3",
     type: "estimations_not_converted",
     count: 4,
-    label: "Estimations non transformees >7j",
+    label: "Estimations non transformées >7j",
     href: "/pipeline?filter=estimation_old",
   },
 ];
@@ -57,15 +65,15 @@ export const mockPerformanceBySource = [
 
 export const mockPerformanceByNegotiator = [
   { name: "Marie Martin", leads: 14, rdv: 5, mandats: 3, conversion: 21, avatar: "MM" },
-  { name: "Jean Negociateur", leads: 9, rdv: 3, mandats: 2, conversion: 22, avatar: "JN" },
+  { name: "Jean Négociateur", leads: 9, rdv: 3, mandats: 2, conversion: 22, avatar: "JN" },
 ];
 
 export const mockRecentLeads = [
   { id: "1", name: "Jean Dupont", address: "12 rue de la Paix, 75002", source: "SeLoger", status: "NEW" as const, createdAt: "2026-03-02T09:00:00Z", assignedTo: "Marie Martin" },
-  { id: "2", name: "Sophie Leroy", address: "8 av. des Champs, 75008", source: "Site web", status: "NEW" as const, createdAt: "2026-03-01T14:30:00Z", assignedTo: "Marie Martin" },
-  { id: "3", name: "Pierre Martin", address: "5 rue du Commerce, 75015", source: "LeBonCoin", status: "IN_CONTACT" as const, createdAt: "2026-02-28T11:00:00Z", assignedTo: "Jean Negociateur" },
-  { id: "4", name: "Marie Bernard", address: "3 pl. Republique, 69003", source: "Manuel", status: "APPOINTMENT_SET" as const, createdAt: "2026-02-25T09:00:00Z", assignedTo: "Marie Martin" },
-  { id: "5", name: "Luc Petit", address: "20 bd Haussmann, 75009", source: "Bien'ici", status: "ESTIMATION_DONE" as const, createdAt: "2026-02-20T10:00:00Z", assignedTo: "Jean Negociateur" },
+  { id: "8", name: "Camille Rousseau", address: "25 rue Oberkampf, 75011", source: "SeLoger", status: "IN_WHATSAPP_CONVERSATION" as const, createdAt: "2026-03-02T11:30:00Z", assignedTo: "Marie Martin" },
+  { id: "10", name: "Léa Fontaine", address: "42 av. Victor Hugo, 75016", source: "Site web", status: "QUALIFIED" as const, createdAt: "2026-03-01T07:00:00Z", assignedTo: "Marie Martin" },
+  { id: "3", name: "Pierre Martin", address: "5 rue du Commerce, 75015", source: "LeBonCoin", status: "IN_CONTACT" as const, createdAt: "2026-02-28T11:00:00Z", assignedTo: "Jean Négociateur" },
+  { id: "5", name: "Luc Petit", address: "20 bd Haussmann, 75009", source: "Bien'ici", status: "ESTIMATION_DONE" as const, createdAt: "2026-02-20T10:00:00Z", assignedTo: "Jean Négociateur" },
 ];
 
 export const mockWeeklyActivity = [

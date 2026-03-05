@@ -97,7 +97,8 @@ export async function sendCalendlyToLead(leadId: string): Promise<{ sent: boolea
   const { sendSms } = await import("@/lib/sms");
   const { sendEmail } = await import("@/lib/email");
   const { sendWhatsApp } = await import("@/lib/whatsapp");
-  const { SequenceChannel, MessageDirection, ActivityType } = await import("@/generated/prisma");
+  const PrismaEnums = await import("@/generated/prisma");
+  const { ActivityType } = PrismaEnums;
 
   if (!prisma) return { sent: false, bookingUrl: null };
   const lead = await prisma.lead.findUnique({
@@ -114,8 +115,8 @@ export async function sendCalendlyToLead(leadId: string): Promise<{ sent: boolea
   await prisma.message.create({
     data: {
       leadId: lead.id,
-      channel: "SMS" as SequenceChannel,
-      direction: "OUTBOUND" as MessageDirection,
+      channel: PrismaEnums.SequenceChannel.SMS,
+      direction: PrismaEnums.MessageDirection.OUTBOUND,
       content: msg,
       status: "SENT",
     },
@@ -124,8 +125,8 @@ export async function sendCalendlyToLead(leadId: string): Promise<{ sent: boolea
   await prisma.message.create({
     data: {
       leadId: lead.id,
-      channel: "EMAIL" as SequenceChannel,
-      direction: "OUTBOUND" as MessageDirection,
+      channel: PrismaEnums.SequenceChannel.EMAIL,
+      direction: PrismaEnums.MessageDirection.OUTBOUND,
       content: emailHtml,
       status: "SENT",
     },
@@ -135,7 +136,7 @@ export async function sendCalendlyToLead(leadId: string): Promise<{ sent: boolea
   await prisma.activity.create({
     data: {
       leadId: lead.id,
-      type: "CALENDLY_SENT" as ActivityType,
+      type: ActivityType.CALENDLY_SENT,
       description: `Lien Calendly envoyé : ${bookingUrl}`,
     },
   });

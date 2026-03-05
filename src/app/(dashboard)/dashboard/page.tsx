@@ -29,7 +29,9 @@ import {
   ArrowDownRight,
   Calendar,
   Clock,
+  DollarSign,
   FileSignature,
+  MessageCircle,
   Phone,
   TrendingUp,
   Users,
@@ -52,10 +54,12 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 
 const FUNNEL_COLORS = [
   "bg-slate-600 dark:bg-slate-500",
-  "bg-slate-500 dark:bg-slate-400",
+  "bg-sky-500 dark:bg-sky-400",
+  "bg-violet-500 dark:bg-violet-400",
+  "bg-amber-500 dark:bg-amber-400",
   "bg-primary",
   "bg-slate-500 dark:bg-slate-400",
-  "bg-slate-600 dark:bg-slate-500",
+  "bg-emerald-600 dark:bg-emerald-500",
 ];
 
 function formatTimeAgo(dateStr: string): string {
@@ -100,6 +104,9 @@ export default function DashboardPage() {
     { key: "rdv", label: "RDV programmés", value: kpis.appointmentsScheduled, icon: Calendar, format: (v: number) => String(v), iconBg: "bg-violet-200/80 dark:bg-violet-900/40", iconColor: "text-violet-700 dark:text-violet-400" },
     { key: "mandats", label: "Mandats signés", value: kpis.mandatesSigned, icon: FileSignature, format: (v: number) => String(v), iconBg: "bg-emerald-200/80 dark:bg-emerald-900/40", iconColor: "text-emerald-700 dark:text-emerald-400" },
     { key: "taux", label: "Taux conversion", value: kpis.conversionRate, icon: Target, format: (v: number) => `${v}%`, iconBg: "bg-amber-200/80 dark:bg-amber-900/40", iconColor: "text-amber-700 dark:text-amber-400" },
+    { key: "qualified", label: "Leads qualifiés", value: mockKpiTrends.qualifiedLeads.value, icon: MessageCircle, format: (v: number) => String(v), iconBg: "bg-green-200/80 dark:bg-green-900/40", iconColor: "text-green-700 dark:text-green-400" },
+    { key: "revenue", label: "CA estimé", value: mockKpiTrends.estimatedRevenue.value, icon: DollarSign, format: (v: number) => `${(v / 1000000).toFixed(1)}M €`, iconBg: "bg-emerald-200/80 dark:bg-emerald-900/40", iconColor: "text-emerald-700 dark:text-emerald-400" },
+    { key: "auto-revenue", label: "CA via automation", value: mockKpiTrends.automationGeneratedRevenue.value, icon: Zap, format: (v: number) => `${(v / 1000000).toFixed(1)}M €`, iconBg: "bg-orange-200/80 dark:bg-orange-900/40", iconColor: "text-orange-700 dark:text-orange-400" },
   ];
 
   const maxWeeklyLeads = Math.max(...mockWeeklyActivity.map((d) => d.leads));
@@ -152,7 +159,7 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
         {kpiCards.map((kpi) => (
           <Card key={kpi.key} className="relative overflow-hidden">
             <CardContent className="p-6">
@@ -283,7 +290,7 @@ export default function DashboardPage() {
               Funnel du mois
             </CardTitle>
             <p className="text-xs text-muted-foreground">
-              Leads &rarr; Contact &rarr; RDV &rarr; Estimation &rarr; Mandats
+              Leads &rarr; WhatsApp &rarr; Qualifiés &rarr; Contact &rarr; RDV &rarr; Estim. &rarr; Mandats
             </p>
           </CardHeader>
           <CardContent>

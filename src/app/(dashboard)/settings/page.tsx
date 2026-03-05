@@ -25,6 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Building2,
   MessageSquare,
+  MessageCircle,
   Users,
   Check,
   Plus,
@@ -275,6 +276,46 @@ export default function SettingsPage() {
                     <p className="text-xs text-muted-foreground">89 emails envoyes ce mois &middot; 98% delivres</p>
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-green-600" />
+                Configuration WhatsApp
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Numéro WhatsApp Business</Label>
+                <Input defaultValue="+33 6 00 00 00 00" placeholder="+33 6 XX XX XX XX" />
+                <p className="text-xs text-muted-foreground">
+                  Numéro connecté à l&apos;API WhatsApp Business pour l&apos;envoi automatique.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Token API WhatsApp</Label>
+                <Input type="password" placeholder="Token WhatsApp Business API" />
+                <p className="text-xs text-muted-foreground">
+                  Token d&apos;accès Meta / WhatsApp Business API.
+                </p>
+              </div>
+              <div className="rounded-lg border bg-muted/50 p-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                    <MessageCircle className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Messages WhatsApp</p>
+                    <p className="text-xs text-muted-foreground">234 messages envoyés ce mois &middot; 18 conversations actives</p>
+                  </div>
+                </div>
+                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div className="h-full w-[47%] rounded-full bg-green-500" />
+                </div>
+                <p className="mt-1 text-[10px] text-muted-foreground">234 / 500 messages (forfait mensuel)</p>
               </div>
             </CardContent>
           </Card>

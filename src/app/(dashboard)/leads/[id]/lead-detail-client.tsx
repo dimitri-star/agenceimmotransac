@@ -46,6 +46,11 @@ import { useState, useEffect, useCallback } from "react";
 import type { LeadStatus, ActivityType } from "@/types";
 import { LEAD_STATUS_ORDER } from "@/lib/mock-leads";
 import { cn } from "@/lib/utils";
+import { HeatScoreBadge } from "@/components/leads/heat-score-badge";
+import { ConversationView } from "@/components/whatsapp/conversation-view";
+import { QualificationCard } from "@/components/whatsapp/qualification-card";
+
+type RightTab = "timeline" | "whatsapp" | "qualification";
 
 type ApiLead = {
   id: string;
@@ -149,6 +154,10 @@ export function LeadDetailClient({ id }: { id: string }) {
   const [mandateType, setMandateType] = useState<"EXCLUSIVE" | "SIMPLE" | "">("");
   const [apiLead, setApiLead] = useState<ApiLead | null>(null);
   const [qualifyLoading, setQualifyLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<RightTab>(
+    lead?.status === "IN_WHATSAPP_CONVERSATION" ? "whatsapp" :
+    lead?.qualification ? "qualification" : "timeline"
+  );
 
   const fetchLead = useCallback(async () => {
     try {
@@ -235,6 +244,19 @@ export function LeadDetailClient({ id }: { id: string }) {
               <span className={cn("rounded-full px-3 py-1 text-sm font-semibold", statusConf.badge)}>
                 {STATUS_LABELS[lead.status]}
               </span>
+              {lead.qualification?.heatScore && (
+                <HeatScoreBadge score={lead.qualification.heatScore} size="md" />
+              )}
+              {lead.prospectPath && (
+                <span className={cn(
+                  "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                  lead.prospectPath === "HOT"
+                    ? "bg-red-100 text-red-700"
+                    : "bg-amber-100 text-amber-700"
+                )}>
+                  {lead.prospectPath === "HOT" ? "Prospect chaud" : "Hésitant"}
+                </span>
+              )}
             </div>
             <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
               <MapPin className="h-3.5 w-3.5" />
@@ -522,6 +544,41 @@ export function LeadDetailClient({ id }: { id: string }) {
         </div>
 
         <div className="lg:col-span-2 space-y-4">
+          {/* Tab navigation */}
+          <div className="flex gap-1 rounded-lg border bg-muted/50 p-1">
+            {([
+              { id: "timeline" as RightTab, label: "Timeline" },
+              { id: "whatsapp" as RightTab, label: "WhatsApp" },
+              { id: "qualification" as RightTab, label: "Qualification" },
+            ]).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex flex-1 items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-all",
+                  activeTab === tab.id
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* WhatsApp tab */}
+          {activeTab === "whatsapp" && (
+            <ConversationView leadId={id} />
+          )}
+
+          {/* Qualification tab */}
+          {activeTab === "qualification" && lead && (
+            <QualificationCard lead={lead} />
+          )}
+
+          {/* Timeline tab */}
+          {activeTab === "timeline" && (
+          <>
           {apiLead?.messages && apiLead.messages.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
@@ -640,6 +697,8 @@ export function LeadDetailClient({ id }: { id: string }) {
               )}
             </CardContent>
           </Card>
+          </>
+          )}
         </div>
       </div>
     </div>

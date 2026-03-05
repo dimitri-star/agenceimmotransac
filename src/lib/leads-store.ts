@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Lead, LeadStatus } from "@/types";
+import type { Lead, LeadStatus, LeadQualification, ProspectPath } from "@/types";
 import { mockLeads, LEAD_STATUS_ORDER } from "./mock-leads";
 
 interface NewLeadInput {
@@ -21,11 +21,15 @@ interface StatusChangeExtras {
   lostReason?: string;
   estimatedValue?: number;
   mandateType?: "EXCLUSIVE" | "SIMPLE";
+  qualification?: LeadQualification;
+  prospectPath?: ProspectPath;
+  calendlyLink?: string;
 }
 
 interface LeadsState {
   leads: Lead[];
   setLeadStatus: (leadId: string, status: LeadStatus, extras?: StatusChangeExtras) => void;
+  updateQualification: (leadId: string, partial: Partial<LeadQualification>) => void;
   getLeadsByStatus: (status: LeadStatus) => Lead[];
   getLeadById: (id: string) => Lead | undefined;
   addLead: (input: NewLeadInput) => void;
@@ -46,6 +50,22 @@ export const useLeadsStore = create<LeadsState>()(
                   ...(status === "LOST" && extras?.lostReason ? { lostReason: extras.lostReason } : {}),
                   ...(status === "ESTIMATION_DONE" && extras?.estimatedValue ? { estimatedValue: extras.estimatedValue } : {}),
                   ...(status === "MANDATE_SIGNED" && extras?.mandateType ? { mandateType: extras.mandateType } : {}),
+                  ...(extras?.qualification ? { qualification: extras.qualification } : {}),
+                  ...(extras?.prospectPath ? { prospectPath: extras.prospectPath } : {}),
+                  ...(extras?.calendlyLink ? { calendlyLink: extras.calendlyLink } : {}),
+                  updatedAt: new Date().toISOString(),
+                }
+              : l
+          ),
+        }));
+      },
+      updateQualification: (leadId, partial) => {
+        set((state) => ({
+          leads: state.leads.map((l) =>
+            l.id === leadId
+              ? {
+                  ...l,
+                  qualification: { ...l.qualification, status: "IN_PROGRESS" as const, ...partial },
                   updatedAt: new Date().toISOString(),
                 }
               : l

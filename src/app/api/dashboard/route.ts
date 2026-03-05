@@ -11,6 +11,7 @@ export async function GET(req: Request) {
   if (!prisma) {
     return NextResponse.json({ error: "Base de données non configurée" }, { status: 503 });
   }
+  const db = prisma;
   const { searchParams } = new URL(req.url);
   const period = searchParams.get("period") ?? "month";
 
@@ -27,10 +28,10 @@ export async function GET(req: Request) {
   }
 
   const [leads, rdv, mandats, allLeads] = await Promise.all([
-    prisma.lead.count({ where: { agencyId, createdAt: { gte: start } } }),
-    prisma.lead.count({ where: { agencyId, status: "APPOINTMENT_SET", updatedAt: { gte: start } } }),
-    prisma.lead.count({ where: { agencyId, status: "MANDATE_SIGNED", updatedAt: { gte: start } } }),
-    prisma.lead.groupBy({
+    db.lead.count({ where: { agencyId, createdAt: { gte: start } } }),
+    db.lead.count({ where: { agencyId, status: "APPOINTMENT_SET", updatedAt: { gte: start } } }),
+    db.lead.count({ where: { agencyId, status: "MANDATE_SIGNED", updatedAt: { gte: start } } }),
+    db.lead.groupBy({
       by: ["status"],
       where: { agencyId, createdAt: { gte: start } },
       _count: true,
@@ -51,28 +52,28 @@ export async function GET(req: Request) {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
   const [toFollowUp, unconfirmedRdv, oldEstimations, agencyRow, mandatesWithAutomation] = await Promise.all([
-    prisma.lead.count({
+    db.lead.count({
       where: {
         agencyId,
         status: { in: ["NEW", "IN_CONTACT"] },
         nextActionAt: { lte: new Date(todayStart.getTime() + 24 * 60 * 60 * 1000), gte: todayStart },
       },
     }),
-    prisma.lead.count({
+    db.lead.count({
       where: { agencyId, status: "APPOINTMENT_SET" },
     }),
-    prisma.lead.count({
+    db.lead.count({
       where: {
         agencyId,
         status: "ESTIMATION_DONE",
         updatedAt: { lt: sevenDaysAgo },
       },
     }),
-    prisma.agency.findUnique({
+    db.agency.findUnique({
       where: { id: agencyId },
       select: { defaultCommission: true },
     }),
-    prisma.lead.findMany({
+    db.lead.findMany({
       where: { agencyId, status: "MANDATE_SIGNED" },
       select: { id: true, createdAt: true },
     }),
@@ -82,13 +83,13 @@ export async function GET(req: Request) {
   const countWithAutomation = await Promise.all(
     mandatesWithAutomation.map(async (l) => {
       const cutoff = new Date(l.createdAt.getTime() + sevenDaysMs);
-      const msg = await prisma.message.findFirst({
+      const msg = await db.message.findFirst({
         where: { leadId: l.id, sentAt: { gte: l.createdAt, lte: cutoff } },
         select: { id: true },
       });
       return msg ? 1 : 0;
     })
-  ).then((arr) => arr.reduce((a, b) => a + b, 0));
+  ).then((arr) => arr.reduce((a: number, b) => a + b, 0 as number));
   const commission = agencyRow?.defaultCommission ?? 8000;
   const revenueFromAutomation = countWithAutomation * commission;
 
